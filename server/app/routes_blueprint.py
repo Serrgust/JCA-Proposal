@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from server.extensions import db
 from sqlalchemy import select
-from server.app.heymodels import User, Proposal
+from server.app.models import User, Proposal
 
 routes_blueprint = Blueprint("routes_blueprint", __name__)
 
