@@ -2,7 +2,6 @@ from server.extensions import db
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
-
 class Proposal(db.Model):
     __tablename__ = 'proposals'
 
@@ -11,20 +10,47 @@ class Proposal(db.Model):
     site = db.Column(db.String(255), nullable=False)
     client = db.Column(db.String(255), nullable=False)
     status = db.Column(db.Enum('pending', 'approved', 'rejected', 'in_review', name="proposal_status"), default='pending')
-    budget = db.Column(db.Numeric(10,2), nullable=True)
+    budget = db.Column(db.Numeric(10, 2), nullable=True)
     deadline = db.Column(db.Date, nullable=True)
     description = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    attachments = db.Column(db.String(255), nullable=True)  # File path for attachments
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    attachments = db.Column(db.String(255), nullable=True)
 
     # Relationship to the User who created the proposal
     user = db.relationship('User', backref=db.backref('proposals', lazy=True))
 
     def __repr__(self):
         return f'<Proposal {self.name} - {self.status}>'
-    
+
+class Subtask(db.Model):
+    __tablename__ = 'subtasks'
+
+    id = db.Column(db.Integer, primary_key=True)
+    task_id = db.Column(db.ForeignKey('tasks.id'), nullable=False, index=True)
+    title = db.Column(db.String(255), nullable=False)
+    hours = db.Column(db.Numeric(5, 2), nullable=False, server_default=db.FetchedValue())
+    order = db.Column(db.Integer, nullable=False, server_default=db.FetchedValue())
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    task = db.relationship('Task', primaryjoin='Subtask.task_id == Task.id', backref='subtasks')
+
+class Task(db.Model):
+    __tablename__ = 'tasks'
+
+    id = db.Column(db.Integer, primary_key=True)
+    proposal_id = db.Column(db.ForeignKey('proposals.id', ondelete='CASCADE'), nullable=False, index=True)
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    order = db.Column(db.Integer, nullable=False, server_default=db.FetchedValue())
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+    proposal = db.relationship('Proposal', primaryjoin='Task.proposal_id == Proposal.id', backref='tasks')
+
 class User(db.Model):
     __tablename__ = 'users'
 
@@ -37,12 +63,10 @@ class User(db.Model):
     role = db.Column(db.Enum('user', 'admin', 'moderator', name="user_roles"), default='user')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    is_active = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=True)  # Fixed from Integer to Boolean
     last_login = db.Column(db.DateTime, nullable=True)
 
-    # Relationship: One user can have multiple proposals
-    proposals = db.relationship('Proposal', backref='author', lazy=True)
-
+    # Password hashing methods
     def set_password(self, password):
         """Hash the password before storing it"""
         self.password_hash = generate_password_hash(password)
@@ -53,4 +77,3 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User {self.username} - {self.role}>'
-
