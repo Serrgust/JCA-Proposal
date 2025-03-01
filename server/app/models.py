@@ -30,12 +30,13 @@ class Subtask(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     task_id = db.Column(db.ForeignKey('tasks.id'), nullable=False, index=True)
     title = db.Column(db.String(255), nullable=False)
-    hours = db.Column(db.Numeric(5, 2), nullable=False, server_default=db.FetchedValue())
-    order = db.Column(db.Integer, nullable=False, server_default=db.FetchedValue())
+    hours = db.Column(db.Integer, nullable=False, default=0)  # Changed to Integer
+    order = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     task = db.relationship('Task', primaryjoin='Subtask.task_id == Task.id', backref='subtasks')
+
 
 class Task(db.Model):
     __tablename__ = 'tasks'
