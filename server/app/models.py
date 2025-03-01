@@ -23,6 +23,20 @@ class Proposal(db.Model):
 
     def __repr__(self):
         return f'<Proposal {self.name} - {self.status}>'
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "site": self.site,
+            "client": self.client,
+            "status": self.status,
+            "budget": float(self.budget) if self.budget else None,  # Convert Decimal to float
+            "deadline": self.deadline.isoformat() if self.deadline else None,  # Convert Date to string
+            "description": self.description,
+            "created_at": self.created_at.isoformat(),
+            "created_by": self.user.to_dict() if self.user else None  # Include the user details
+        }
 
 class Subtask(db.Model):
     __tablename__ = 'subtasks'
@@ -37,6 +51,18 @@ class Subtask(db.Model):
 
     task = db.relationship('Task', primaryjoin='Subtask.task_id == Task.id', backref='subtasks')
 
+    def to_dict(self):
+        """Convert Subtask object to dictionary"""
+        return {
+            "id": self.id,
+            "task_id": self.task_id,
+            "title": self.title,
+            "hours": self.hours,
+            "order": self.order,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
 
 class Task(db.Model):
     __tablename__ = 'tasks'
@@ -45,12 +71,32 @@ class Task(db.Model):
     proposal_id = db.Column(db.ForeignKey('proposals.id', ondelete='CASCADE'), nullable=False, index=True)
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text)
-    order = db.Column(db.Integer, nullable=False, server_default=db.FetchedValue())
+    order = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-
+    # Relationship with Proposal
     proposal = db.relationship('Proposal', primaryjoin='Task.proposal_id == Proposal.id', backref='tasks')
+
+    def to_dict(self, include_proposal=False, include_subtasks=False):
+        """Convert Task object to dictionary, with optional proposal and subtasks"""
+        task_dict = {
+            "id": self.id,
+            "proposal_id": self.proposal_id,
+            "title": self.title,
+            "description": self.description,
+            "order": self.order,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+        }
+
+        if include_proposal:
+            task_dict["proposal"] = self.proposal.to_dict() if self.proposal else None  # Include proposal details
+
+        if include_subtasks:
+            task_dict["subtasks"] = [s.to_dict() for s in self.subtasks]  # Include subtasks
+
+        return task_dict
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -78,3 +124,13 @@ class User(db.Model):
 
     def __repr__(self):
         return f'<User {self.username} - {self.role}>'
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "email": self.email,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "role": self.role
+        }
