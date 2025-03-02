@@ -2,8 +2,9 @@ from flask import Blueprint, jsonify, request
 from server.extensions import db
 from sqlalchemy import select
 from server.app.models import User, Proposal
-from sqlalchemy.orm import load_only
-from server.app.services import get_all_users, get_filtered_proposals, get_tasks_by_proposal, get_task_by_id
+from server.app.services.user_services import get_all_users
+from server.app.services.proposal_services import get_filtered_proposals
+from server.app.services.task_services import get_tasks_by_proposal, get_task_by_id
 
 get_routes_blueprint = Blueprint("get_routes_blueprint", __name__)
 
@@ -25,15 +26,16 @@ def get_users():
 # Fetch all proposals with filtering
 @get_routes_blueprint.route("/proposals", methods=["GET"])
 def get_proposals():
+    name = request.args.get("name")
     status = request.args.get("status")
     client = request.args.get("client")
     created_by = request.args.get("created_by")
 
-    proposals = get_filtered_proposals(status, client, created_by)
+    proposals = get_filtered_proposals(name, client, status, created_by)
 
     # If there's an error (e.g., invalid `created_by`), return it
-    if isinstance(proposals, tuple) and "error" in proposals[0]:
-        return jsonify(proposals[0]), proposals[1]
+    if isinstance(proposals, dict) and "error" in proposals:
+        return jsonify(proposals), 400  # ✅ Properly return error response
 
     return jsonify([p.to_dict() for p in proposals])
 

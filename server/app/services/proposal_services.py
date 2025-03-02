@@ -3,7 +3,7 @@ from sqlalchemy.orm import load_only
 from server.extensions import db
 from server.app.models import Proposal
 
-def get_filtered_proposals(status=None, client=None, created_by=None):
+def get_filtered_proposals(name=None, client=None, status=None, created_by=None):
     """Fetch proposals with filtering"""
     stmt = select(Proposal).options(
         load_only(
@@ -14,10 +14,13 @@ def get_filtered_proposals(status=None, client=None, created_by=None):
     )
 
     conditions = []
-    if status:
-        conditions.append(Proposal.status == status)
-    if client:
-        conditions.append(Proposal.client.ilike(f"%{client}%"))  # Case-insensitive search
+    
+    if name and name.strip():
+        conditions.append(Proposal.name.ilike(f"%{name.strip()}%"))  # Case-insensitive name search
+    if client and client.strip():
+        conditions.append(Proposal.client.ilike(f"%{client.strip()}%"))  # Case-insensitive client search
+    if status and status.strip():
+        conditions.append(Proposal.status == status.strip())
     if created_by:
         try:
             conditions.append(Proposal.created_by == int(created_by))
@@ -29,3 +32,4 @@ def get_filtered_proposals(status=None, client=None, created_by=None):
 
     result = db.session.execute(stmt)
     return result.scalars().all()
+

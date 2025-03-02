@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+""" from flask import Blueprint, jsonify, request
 from server.extensions import db
 from sqlalchemy import select
 from server.app.models import User, Proposal
@@ -107,3 +107,4 @@ def add_user():
     db.session.commit()
 
     return jsonify({"message": f"User '{new_user.username}' added!", "user_id": new_user.id}), 201
+ """
