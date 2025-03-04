@@ -4,25 +4,27 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 class Proposal(db.Model):
     __tablename__ = 'proposals'
-
+    
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(255), nullable=False)
     site = db.Column(db.String(255), nullable=False)
     client = db.Column(db.String(255), nullable=False)
-    status = db.Column(db.Enum('pending', 'approved', 'rejected', 'in_review', name="proposal_status"), default='pending')
+    quote_number = db.Column(db.String(20), nullable=False)
+    client_name = db.Column(db.String(255), nullable=False)
     budget = db.Column(db.Numeric(10, 2), nullable=True)
-    deadline = db.Column(db.Date, nullable=True)
     description = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    attachments = db.Column(db.String(255), nullable=True)
+    business_unit = db.Column(db.String(50), default="In House Project", nullable=False)
+    opportunity_status = db.Column(db.String(50), default="Quote", nullable=False)
+    resource_name = db.Column(db.String(255), default="Automation Team", nullable=False)
 
     # Relationship to the User who created the proposal
     user = db.relationship('User', backref=db.backref('proposals', lazy=True))
-
+    
     def __repr__(self):
-        return f'<Proposal {self.name} - {self.status}>'
+        return f'<Proposal {self.name} - {self.quote_number}>'
     
     def to_dict(self):
         return {
@@ -30,12 +32,16 @@ class Proposal(db.Model):
             "name": self.name,
             "site": self.site,
             "client": self.client,
-            "status": self.status,
+            "quote_number": self.quote_number,
+            "client_name": self.client_name,
             "budget": float(self.budget) if self.budget else None,  # Convert Decimal to float
-            "deadline": self.deadline.isoformat() if self.deadline else None,  # Convert Date to string
             "description": self.description,
             "created_at": self.created_at.isoformat(),
-            "created_by": self.user.to_dict() if self.user else None  # Include the user details
+            "updated_at": self.updated_at.isoformat(),
+            "created_by": self.user.to_dict() if self.user else None,  # Include the user details
+            "business_unit": self.business_unit,
+            "opportunity_status": self.opportunity_status,
+            "resource_name": self.resource_name
         }
 
 class Subtask(db.Model):

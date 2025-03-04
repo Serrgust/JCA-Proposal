@@ -1,19 +1,12 @@
-import { Routes, Route } from "react-router-dom";
-import Home from "./pages/Home.jsx";
-import Proposals from "./pages/Proposals.jsx";
+import { Outlet } from "react-router-dom";
 import Navbar from "./components/Navbar.jsx";
-import Users from "./pages/Users.jsx";
 
 function App() {
   return (
     <div>
-      <Navbar />
+      <Navbar /> {/* This is the Navbar component */}
       <div className="container mx-auto p-4">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/proposals" element={<Proposals />} />
-        </Routes>
+        <Outlet /> {/* This is where the child pages (Home, Users, Proposals) will be rendered */}
       </div>
     </div>
   );

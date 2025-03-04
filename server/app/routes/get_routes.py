@@ -27,17 +27,27 @@ def get_users():
 @get_routes_blueprint.route("/proposals", methods=["GET"])
 def get_proposals():
     name = request.args.get("name")
-    status = request.args.get("status")
     client = request.args.get("client")
+    client_name = request.args.get("client_name")  
     created_by = request.args.get("created_by")
 
-    proposals = get_filtered_proposals(name, client, status, created_by)
+    # Call the function with correct parameters
+    proposals = get_filtered_proposals(name, client, client_name, created_by)
 
     # If there's an error (e.g., invalid `created_by`), return it
     if isinstance(proposals, dict) and "error" in proposals:
         return jsonify(proposals), 400  # ✅ Properly return error response
 
-    return jsonify([p.to_dict() for p in proposals])
+    return jsonify([p.to_dict() for p in proposals])  # ✅ Now properly returns proposals as JSON
+
+# Fetch a single proposal by ID
+@get_routes_blueprint.route("/proposals/<int:proposal_id>", methods=["GET"])
+def get_proposal_by_id(proposal_id):
+    proposal = db.session.get(Proposal, proposal_id)
+    if not proposal:
+        return jsonify({"error": "Proposal not found"}), 404  # ✅ Proper error handling
+
+    return jsonify(proposal.to_dict())  # ✅ Return full proposal details
 
 @get_routes_blueprint.route("/proposals/<proposal_id>/tasks", methods=["GET"])
 def get_tasks_by_proposal_id(proposal_id):
