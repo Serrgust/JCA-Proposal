@@ -1,6 +1,19 @@
 from server.extensions import db
 from datetime import datetime
+import pytz
 from werkzeug.security import generate_password_hash, check_password_hash
+
+PR_TZ = pytz.timezone("America/Puerto_Rico")  # Puerto Rico timezone
+UTC_TZ = pytz.utc  # Explicit UTC timezone
+
+def convert_to_pr_timezone(dt):
+    if dt is None:
+        return None  # Handle cases where timestamps may be missing
+
+    if dt.tzinfo is None:  
+        dt = UTC_TZ.localize(dt)  # Convert naive datetime to UTC
+
+    return dt.astimezone(PR_TZ).isoformat()  # Convert UTC to Puerto Rico time
 
 class Proposal(db.Model):
     __tablename__ = 'proposals'
@@ -25,7 +38,7 @@ class Proposal(db.Model):
     
     def __repr__(self):
         return f'<Proposal {self.name} - {self.quote_number}>'
-    
+        
     def to_dict(self):
         return {
             "id": self.id,
@@ -34,15 +47,21 @@ class Proposal(db.Model):
             "client": self.client,
             "quote_number": self.quote_number,
             "client_name": self.client_name,
-            "budget": float(self.budget) if self.budget else None,  # Convert Decimal to float
+            "budget": float(self.budget) if self.budget is not None else None,
             "description": self.description,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat(),
-            "created_by": self.user.to_dict() if self.user else None,  # Include the user details
+            "created_at": convert_to_pr_timezone(self.created_at),
+            "updated_at": convert_to_pr_timezone(self.updated_at),
+            "created_by": {
+                "id": self.user.id if self.user else None,
+                "first_name": self.user.first_name if self.user else "Unknown",
+                "last_name": self.user.last_name if self.user else "Unknown",
+            } if self.user else None,  # Include User details if exists
             "business_unit": self.business_unit,
             "opportunity_status": self.opportunity_status,
             "resource_name": self.resource_name
         }
+
+
 
 class Subtask(db.Model):
     __tablename__ = 'subtasks'
@@ -65,8 +84,8 @@ class Subtask(db.Model):
             "title": self.title,
             "hours": self.hours,
             "order": self.order,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+            "created_at": convert_to_pr_timezone(self.created_at),
+            "updated_at": convert_to_pr_timezone(self.updated_at),
         }
 
 
@@ -92,8 +111,8 @@ class Task(db.Model):
             "title": self.title,
             "description": self.description,
             "order": self.order,
-            "created_at": self.created_at.isoformat(),
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+            "created_at": convert_to_pr_timezone(self.created_at),
+            "updated_at": convert_to_pr_timezone(self.updated_at),
         }
 
         if include_proposal:
@@ -113,10 +132,10 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)  # Store hashed passwords
     first_name = db.Column(db.String(50), nullable=True)
     last_name = db.Column(db.String(50), nullable=True)
-    role = db.Column(db.Enum('user', 'admin', 'moderator', name="user_roles"), default='user')
+    role = db.Column(db.Enum('user', 'admin', 'moderator', name="user_roles"), default='user', nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    is_active = db.Column(db.Boolean, default=True)  # Fixed from Integer to Boolean
+    is_active = db.Column(db.Boolean, default=True, nullable=False)  # ✅ Ensure it's never NULL
     last_login = db.Column(db.DateTime, nullable=True)
 
     # Password hashing methods
@@ -129,14 +148,17 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
-        return f'<User {self.username} - {self.role}>'
+        return f'<User {self.username} - {self.role} - Active: {self.is_active}>'
     
     def to_dict(self):
+        """Return user data in dictionary format, including is_active status."""
         return {
             "id": self.id,
             "username": self.username,
             "email": self.email,
             "first_name": self.first_name,
             "last_name": self.last_name,
-            "role": self.role
+            "role": self.role,
+            "is_active": self.is_active,  # ✅ Include is_active to easily filter users
+            "last_login": self.last_login.isoformat() if self.last_login else None
         }

@@ -8,20 +8,20 @@ from server.app.services.task_services import get_tasks_by_proposal, get_task_by
 
 get_routes_blueprint = Blueprint("get_routes_blueprint", __name__)
 
-@get_routes_blueprint.route("/users", methods=["GET"])
+""" @get_routes_blueprint.route("/users", methods=["GET"])
 def get_users():
     # Read query parameters from request
     user_id = request.args.get("id")
     role = request.args.get("role")
 
     # Get filtered users
-    users = get_all_users(user_id=user_id, role=role)
+    users = get_all_users(user_id=user_id, role=role, is_active=None, username=None)
 
     # If there's an error (e.g., invalid `id`), return it
     if isinstance(users, tuple) and "error" in users[0]:
         return jsonify(users[0]), users[1]
 
-    return jsonify([u.to_dict() for u in users])
+    return jsonify([u.to_dict() for u in users]) """
 
 # Fetch all proposals with filtering
 @get_routes_blueprint.route("/proposals", methods=["GET"])
